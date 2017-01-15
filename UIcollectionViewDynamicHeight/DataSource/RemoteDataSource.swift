@@ -1,17 +1,17 @@
 import Foundation
 
 protocol RemoteDataSourceObserver {
-    func changed(dataSource: RemoteDataSource)
+    func changed(_ dataSource: RemoteDataSource)
 }
 
 class RemoteDataSource {
     
     struct Cache {
         let data: [News]
-        let expiredAt: NSDate
+        let expiredAt: Date
         
         var isExpired: Bool {
-            return NSDate().compare(expiredAt) != .OrderedAscending
+            return Date().compare(expiredAt) != .orderedAscending
         }
     }
     
@@ -23,18 +23,18 @@ class RemoteDataSource {
      - **Loading:** Loading in progress
      */
     enum State {
-        case Initialised, Done, Loading
+        case initialised, done, loading
     }
     
-    private var lastLoadingTask: NSURLSessionTask?
-    private let url = NSURL(string: "https://newsapi.org/v1/articles?source=google-news&apiKey=949ea3c933384a4c9c865b4fa3b6a620")!
-    private var observers = [RemoteDataSourceObserver]()
-    private var finishUpdateCallback: ((news: [News]) -> Void)?
+    fileprivate var lastLoadingTask: URLSessionTask?
+    fileprivate let url = URL(string: "https://newsapi.org/v1/articles?source=google-news&apiKey=949ea3c933384a4c9c865b4fa3b6a620")!
+    fileprivate var observers = [RemoteDataSourceObserver]()
+    fileprivate var finishUpdateCallback: ((_ news: [News]) -> Void)?
     
-    var lastValidData = Cache(data: [], expiredAt: NSDate())
-    var state = State.Initialised
+    var lastValidData = Cache(data: [], expiredAt: Date())
+    var state = State.initialised
     
-    func add(observer obj: Any, with handler: (dataSource: RemoteDataSource) -> Void) {
+    func add(observer obj: Any, with handler: @escaping (_ dataSource: RemoteDataSource) -> Void) {
         observers.append(ClosureObserver(closure: handler))
     }
     
@@ -46,16 +46,16 @@ class RemoteDataSource {
         
         lastLoadingTask?.cancel()
         
-        state = .Loading
+        state = .loading
         notifyObservers()
         
-        let sesion = NSURLSession(configuration: NSURLSessionConfiguration.defaultSessionConfiguration())
-        lastLoadingTask = sesion.dataTaskWithURL(url) {[weak self] data, response, error in
+        let sesion = URLSession(configuration: URLSessionConfiguration.default)
+        lastLoadingTask = sesion.dataTask(with: url, completionHandler: {[weak self] data, response, error in
             var news = [News]()
             
             if let data = data {
                 do {
-                    if let json = try NSJSONSerialization.JSONObjectWithData(data, options: []) as? [String: AnyObject] {
+                    if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: AnyObject] {
                         if let articlesJson = json["articles"] as? [[String: AnyObject]] {
                             for art in articlesJson {
                                 if let article = News(json: art) {
@@ -69,26 +69,26 @@ class RemoteDataSource {
                 }
             }
             
-            news.sortInPlace{ $0.0.date.compare($0.1.date) == .OrderedAscending }
+            news.sort{ $0.0.date.compare($0.1.date as Date) == .orderedAscending }
             
-            self?.state = .Done
-            self?.lastValidData = Cache(data: news, expiredAt: NSDate().dateByAddingTimeInterval(30000))
+            self?.state = .done
+            self?.lastValidData = Cache(data: news, expiredAt: Date().addingTimeInterval(30000))
             self?.notifyObservers()
-        }
+        }) 
         
         lastLoadingTask?.resume()
     }
     
-    private func notifyObservers() {
+    fileprivate func notifyObservers() {
         for obsrv in observers {
-            dispatch_async(dispatch_get_main_queue(), {
+            DispatchQueue.main.async(execute: {
                 obsrv.changed(self)
             })
         }
     }
     
     func invalidateCache() {
-        lastValidData = Cache(data: [], expiredAt: NSDate())
+        lastValidData = Cache(data: [], expiredAt: Date())
     }
     
 }
@@ -105,17 +105,17 @@ extension News {
         self.details = details
         self.imageURL = (json["urlToImage"] as? String) ?? ""
         
-        let dateFormat = NSDateFormatter()
+        let dateFormat = DateFormatter()
         dateFormat.dateFormat = "YYYY-MM-dd'T'HH:MM:ss'Z'"
         
-        self.date = dateFormat.dateFromString(publishedAt) ?? NSDate()
+        self.date = dateFormat.date(from: publishedAt) ?? Date()
     }
 }
 
 private struct ClosureObserver: RemoteDataSourceObserver {
-    let closure: (dataSource: RemoteDataSource) -> Void
+    let closure: (_ dataSource: RemoteDataSource) -> Void
     
-    func changed(dataSource: RemoteDataSource) {
-        closure(dataSource: dataSource)
+    func changed(_ dataSource: RemoteDataSource) {
+        closure(dataSource)
     }
 }

@@ -10,8 +10,10 @@ This project provide example how to implement multicolumn multilie layout for UI
 
 # Requirements
 
-- Swift 2.3, Xcode 7.3.1, storyboard 
+- Swift 3, Xcode 8.2+, AutoLayout
 - Minimum iOS version is 8.2
+
+For Swift 2.3 see related branch
 
 # How to use
 

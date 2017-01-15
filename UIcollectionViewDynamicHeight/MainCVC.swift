@@ -11,17 +11,17 @@ class MainCVC: UICollectionViewController {
         let layout = collectionViewLayout as! DynamicHeightLayout
         layout.delegate = self
         
-        updateColumnsNumberForOrientation(isPortrait(UIApplication.sharedApplication().statusBarOrientation))
+        updateColumnsNumberForOrientation(isPortrait(UIApplication.shared.statusBarOrientation))
         
         setupPullToRefreshControl()
         
         handleDataSourceUpdates()
     }
 
-    override func viewDidAppear(animated: Bool) {
+    override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
-        if dataSource.state == .Initialised {
+        if dataSource.state == .initialised {
             collectionView?.setContentOffset(CGPoint(x: 0, y:  collectionView!.contentOffset.y - refresh.frame.size.height), animated: true)
             refresh.beginRefreshing()
             pullToRefreshAction()
@@ -29,22 +29,22 @@ class MainCVC: UICollectionViewController {
     }
     
     // We want to display different number of columns for big and small screens and different orientations
-    func updateColumnsNumberForOrientation(isPortrait: Bool) {
+    func updateColumnsNumberForOrientation(_ isPortrait: Bool) {
         let layout = collectionViewLayout as! DynamicHeightLayout
         print(traitCollection.verticalSizeClass.rawValue, traitCollection.horizontalSizeClass.rawValue)
-        let isBig = traitCollection.verticalSizeClass == .Regular && traitCollection.horizontalSizeClass == .Regular
+        let isBig = traitCollection.verticalSizeClass == .regular && traitCollection.horizontalSizeClass == .regular
         let columnsCountNarrow = isBig ? 2 : 1
         let columnsCountWidth = isBig ? 3 : 2
         layout.numberOfColumns = isPortrait ? columnsCountNarrow : columnsCountWidth
     }
     
-    private var refresh = UIRefreshControl()
+    fileprivate var refresh = UIRefreshControl()
     func setupPullToRefreshControl() {
-        refresh.addTarget(self, action: #selector(pullToRefreshAction), forControlEvents: .ValueChanged)
-        refresh.tintColor = UIColor.blackColor()
+        refresh.addTarget(self, action: #selector(pullToRefreshAction), for: .valueChanged)
+        refresh.tintColor = UIColor.black
         collectionView?.alwaysBounceVertical = true
         
-        collectionView?.insertSubview(refresh, atIndex: 0)
+        collectionView?.insertSubview(refresh, at: 0)
         refresh.layer.zPosition = -1
     }
     
@@ -52,14 +52,14 @@ class MainCVC: UICollectionViewController {
         dataSource.add(observer: self) {[weak self] dataSource in
             guard let this = self else { return }
             
-            if dataSource.state == .Loading {
-                UIApplication.sharedApplication().networkActivityIndicatorVisible = true
+            if dataSource.state == .loading {
+                UIApplication.shared.isNetworkActivityIndicatorVisible = true
             }
             
-            if dataSource.state == .Done {
+            if dataSource.state == .done {
                 this.collectionView?.reloadData()
                 this.refresh.endRefreshing()
-                UIApplication.sharedApplication().networkActivityIndicatorVisible = false
+                UIApplication.shared.isNetworkActivityIndicatorVisible = false
             }
         }
     }
@@ -68,11 +68,11 @@ class MainCVC: UICollectionViewController {
         dataSource.loadIfNeeded()
     }
     
-    private func isPortrait(orientation: UIInterfaceOrientation) -> Bool {
-        return orientation == .Portrait || orientation == .PortraitUpsideDown
+    fileprivate func isPortrait(_ orientation: UIInterfaceOrientation) -> Bool {
+        return orientation == .portrait || orientation == .portraitUpsideDown
     }
 
-    override func willRotateToInterfaceOrientation(toInterfaceOrientation: UIInterfaceOrientation, duration: NSTimeInterval) {
+    override func willRotate(to toInterfaceOrientation: UIInterfaceOrientation, duration: TimeInterval) {
         let layout = collectionViewLayout as! DynamicHeightLayout
         updateColumnsNumberForOrientation(isPortrait(toInterfaceOrientation))
         layout.invalidateLayout()
@@ -80,20 +80,20 @@ class MainCVC: UICollectionViewController {
 
     // MARK: UICollectionViewDataSource
 
-    override func numberOfSectionsInCollectionView(collectionView: UICollectionView) -> Int {
+    override func numberOfSections(in collectionView: UICollectionView) -> Int {
         return 1
     }
 
-    override func collectionView(collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+    override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return dataSource.lastValidData.data.count
     }
 
     var lastRandomColorIndex = -1
-    override func collectionView(collectionView: UICollectionView, cellForItemAtIndexPath indexPath: NSIndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCellWithReuseIdentifier("Cell", forIndexPath: indexPath) as! NewsCell
+    override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "Cell", for: indexPath) as! NewsCell
         
         //let color = dataSource.colors[indexPath.item]
-        cell.contentView.backgroundColor = UIColor.whiteColor()
+        cell.contentView.backgroundColor = UIColor.white
         
         let current = dataSource.lastValidData.data[indexPath.item]
         
@@ -105,7 +105,7 @@ class MainCVC: UICollectionViewController {
 }
 
 extension MainCVC: DynamicHeightLayoutDelegate {
-    func collectionView(collectionView: UICollectionView, columnWidth: CGFloat, heightForItemAt indexPath: NSIndexPath) -> CGFloat {
+    func collectionView(_ collectionView: UICollectionView, columnWidth: CGFloat, heightForItemAt indexPath: IndexPath) -> CGFloat {
         let current = dataSource.lastValidData.data[indexPath.item]
         let height = NewsCell.calculateHeightFor(current.title, detailsText: current.details, width: columnWidth)
         

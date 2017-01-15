@@ -4,5 +4,5 @@ struct News {
     let title: String
     let details: String
     let imageURL: String
-    let date: NSDate
+    let date: Date
 }
